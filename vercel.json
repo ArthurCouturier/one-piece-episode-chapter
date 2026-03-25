@@ -1,0 +1,5 @@
+{
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "ignore": ["firebase-debug.log"]
+}
