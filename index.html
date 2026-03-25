@@ -138,7 +138,7 @@
     justify-content: center; font-size: .5rem; font-weight: 600; cursor: default;
     transition: transform .1s; position: relative;
   }
-  .ep-cell:hover { transform: scale(1.4); z-index: 2; }
+  .ep-cell:hover, .ep-cell.active { transform: scale(1.4); z-index: 2; }
   .ep-cell.canon { background: var(--canon-bg); color: var(--canon); border: 1px solid #22c55e30; }
   .ep-cell.filler { background: var(--filler-bg); color: var(--filler); border: 1px solid #ef444430; }
   .ep-cell.mixed { background: var(--mixed-bg); color: var(--mixed); border: 1px solid #f59e0b30; }
@@ -614,9 +614,24 @@ function renderSagaDetail(mc, sagaIdx) {
 
   document.getElementById('map-back').onclick = () => { mapSelectedSaga = null; renderMap(); };
 
+  let activeCell = null;
+  function showTooltip(c, html) {
+    if (activeCell) activeCell.classList.remove('active');
+    activeCell = c;
+    c.classList.add('active');
+    tt.innerHTML = html; tt.style.display = 'block';
+    const r = c.getBoundingClientRect();
+    tt.style.left = Math.min(r.left, window.innerWidth - 290) + 'px';
+    tt.style.top = (r.bottom + 6) + 'px';
+  }
+  function hideTooltip() {
+    tt.style.display = 'none';
+    if (activeCell) { activeCell.classList.remove('active'); activeCell = null; }
+  }
+
   if (inverseMode) {
     mc.querySelectorAll('.ep-cell').forEach(c => {
-      c.onmouseenter = () => {
+      function getHtml() {
         const ch = +c.dataset.ch;
         const eps = CH_TO_EP[ch];
         const v = chToVol(ch);
@@ -624,16 +639,15 @@ function renderSagaDetail(mc, sagaIdx) {
         t += `<br>${c.dataset.arc}`;
         if (eps) t += `<br>Episodes: ${eps.join(', ')}`;
         else t += '<br>Pas d\'episode correspondant';
-        tt.innerHTML = t; tt.style.display = 'block';
-        const r = c.getBoundingClientRect();
-        tt.style.left = Math.min(r.left, window.innerWidth - 290) + 'px';
-        tt.style.top = (r.bottom + 6) + 'px';
-      };
-      c.onmouseleave = () => { tt.style.display = 'none'; };
+        return t;
+      }
+      c.onmouseenter = () => showTooltip(c, getHtml());
+      c.onmouseleave = () => hideTooltip();
+      c.onclick = (e) => { e.stopPropagation(); showTooltip(c, getHtml()); };
     });
   } else {
     mc.querySelectorAll('.ep-cell').forEach(c => {
-      c.onmouseenter = () => {
+      function getHtml() {
         const ep = +c.dataset.ep;
         const type = getType(ep);
         const chs = EP_TO_CH[ep];
@@ -641,14 +655,14 @@ function renderSagaDetail(mc, sagaIdx) {
         t += `<br>${c.dataset.arc}`;
         if (chs) t += `<br>Chapitres: ${chs.map(c => chWithVol(c)).join(', ')}`;
         else if (type === 'filler') t += '<br>Filler (pas de chapitre)';
-        tt.innerHTML = t; tt.style.display = 'block';
-        const r = c.getBoundingClientRect();
-        tt.style.left = Math.min(r.left, window.innerWidth - 290) + 'px';
-        tt.style.top = (r.bottom + 6) + 'px';
-      };
-      c.onmouseleave = () => { tt.style.display = 'none'; };
+        return t;
+      }
+      c.onmouseenter = () => showTooltip(c, getHtml());
+      c.onmouseleave = () => hideTooltip();
+      c.onclick = (e) => { e.stopPropagation(); showTooltip(c, getHtml()); };
     });
   }
+  document.addEventListener('click', () => hideTooltip());
 }
 
 renderArcs(); renderFillers(); renderMap();
